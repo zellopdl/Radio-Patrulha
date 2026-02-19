@@ -31,22 +31,23 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `Aja como um especialista em segurança e geolocalização visual. 
-            A primeira imagem é a visão atual da câmera. 
-            A segunda imagem é a referência salva.
+            text: `Você é um sistema de verificação de ronda. Sua única missão é confirmar se o usuário chegou ao destino.
             
-            Sua tarefa é verificar se o usuário está de fato no mesmo local ou olhando para o mesmo objeto.
-            REGRAS DE VALIDAÇÃO (SEJA EXTREMAMENTE TOLERANTE):
-            1. NÃO exija alinhamento perfeito. Se os elementos principais (móveis, quadros, cores, portas, objetos específicos) estiverem presentes em ambas as imagens, considere CORRETO.
-            2. Ignore mudanças de iluminação, granulação da imagem ou se a câmera está um pouco mais longe ou perto do que a referência.
-            3. O objetivo é confirmar a presença no local, não a perfeição da sobreposição.
-            4. Se você identificar que se trata do mesmo ambiente ou objeto, responda isCorrectSpot: true.
+            IMAGEM 1: Visão atual do usuário.
+            IMAGEM 2: Foto de referência do local.
             
-            Responda estritamente em JSON: 
+            DIRETRIZES DE VALIDAÇÃO (MUITO IMPORTANTE):
+            1. SEJA EXTREMAMENTE PERMISSIVO. Se você reconhecer o mesmo ambiente, o mesmo móvel, o mesmo objeto central ou a mesma parede, diga que está CORRETO.
+            2. NÃO exija alinhamento. O usuário pode estar um pouco mais longe, em um ângulo diferente ou com luz diferente.
+            3. Se houver 40% de chance de ser o mesmo lugar, considere CORRETO (isCorrectSpot: true).
+            4. Ignore borrões de movimento ou granulação.
+            5. O objetivo é ajudar o usuário, não bloqueá-lo por detalhes técnicos.
+            
+            Responda em JSON: 
             { 
               "isCorrectSpot": boolean, 
               "confidence": number (0-100), 
-              "feedback": "uma frase curtíssima em português" 
+              "feedback": "Mensagem curta de incentivo" 
             }`,
           },
         ],
@@ -72,7 +73,7 @@ export const validateVisualAnchor = async (
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: 'Erro na análise visual.'
+      feedback: 'Erro de conexão.'
     };
   }
 };
