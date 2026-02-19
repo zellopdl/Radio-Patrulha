@@ -31,9 +31,22 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `Compare estas duas imagens. A primeira é a visão atual do patrulheiro, a segunda é a foto de referência do local exato. 
-            Verifique se o usuário está na mesma posição e perspectiva (tolerância de alguns centímetros).
-            Responda em JSON: { "isCorrectSpot": boolean, "confidence": number (0-100), "feedback": "texto curto em português" }`,
+            text: `Aja como um especialista em segurança e geolocalização visual. 
+            A primeira imagem é o que o usuário está vendo AGORA. 
+            A segunda imagem é a REFERÊNCIA do ponto de ronda.
+            
+            Sua tarefa é verificar se o usuário encontrou o local correto.
+            REGRAS DE VALIDAÇÃO:
+            1. Seja tolerante: Se os objetos principais, cores e estrutura do ambiente forem os mesmos, considere CORRETO (isCorrectSpot: true).
+            2. Ignore variações leves de luz, sombras ou se o ângulo está ligeiramente diferente (até 30 graus de diferença).
+            3. Se você reconhecer que é o mesmo lugar, dê uma confiança alta.
+            
+            Responda estritamente em JSON: 
+            { 
+              "isCorrectSpot": boolean, 
+              "confidence": number (0-100), 
+              "feedback": "uma frase curta e motivadora em português" 
+            }`,
           },
         ],
       },
@@ -51,7 +64,8 @@ export const validateVisualAnchor = async (
       },
     });
 
-    return JSON.parse(response.text || '{}') as VisualValidation;
+    const result = JSON.parse(response.text || '{}');
+    return result as VisualValidation;
   } catch (error) {
     console.error('Visual Validation Error:', error);
     return {
