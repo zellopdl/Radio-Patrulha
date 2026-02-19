@@ -3,28 +3,25 @@ export interface Coordinates {
   latitude: number;
   longitude: number;
   heading?: number | null;
+  accuracy?: number | null;
 }
 
-export enum TaskStatus {
-  PENDING = 'PENDING',
-  ACTIVE = 'ACTIVE',
-  VALIDATING = 'VALIDATING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED'
-}
-
-export interface PatrolTask {
+export interface SavedLocation {
   id: string;
   name: string;
-  targetObject: string;
-  targetLocation: Coordinates;
-  scheduledTime: string; // HH:mm
-  status: TaskStatus;
-  lastAttempt?: string;
+  latitude: number;
+  longitude: number;
+  createdAt: number;
+}
+
+export enum AppMode {
+  DASHBOARD = 'DASHBOARD',
+  REGISTRY = 'REGISTRY',
+  PATROL = 'PATROL'
 }
 
 export interface NavigationState {
-  distance: number; // meters
-  bearing: number; // degrees from North
+  distance: number; // metros
+  bearing: number; // graus
   instruction: 'STRAIGHT' | 'LEFT' | 'RIGHT' | 'BACK' | 'ARRIVED';
 }

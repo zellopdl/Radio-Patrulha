@@ -1,8 +1,7 @@
 {
-  "name": "PatrolGuard AI",
-  "description": "Um sistema de ronda inteligente com verificação de localização via GPS e reconhecimento de objetos por IA.",
+  "name": "PatrolGuard GPS",
+  "description": "Sistema de ronda baseado em check-points GPS com cadastro e navegação.",
   "requestFramePermissions": [
-    "camera",
     "geolocation"
   ]
 }
