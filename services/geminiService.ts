@@ -1,8 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export interface ValidationResult {
   isMatch: boolean;
   reasoning: string;
@@ -13,6 +11,10 @@ export const validateObject = async (
   targetObject: string
 ): Promise<ValidationResult> => {
   try {
+    // Inicializamos o cliente apenas no momento da chamada para evitar erros de top-level
+    // e garantir que o process.env.API_KEY injetado pelo ambiente esteja disponível.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
@@ -41,12 +43,16 @@ export const validateObject = async (
       },
     });
 
-    return JSON.parse(response.text || '{}') as ValidationResult;
+    if (!response.text) {
+      throw new Error("Resposta vazia da IA");
+    }
+
+    return JSON.parse(response.text) as ValidationResult;
   } catch (error) {
     console.error('Gemini Validation Error:', error);
     return {
       isMatch: false,
-      reasoning: 'Erro ao conectar com o servidor de IA. Tente novamente.',
+      reasoning: 'Erro ao conectar com o servidor de IA. Verifique se a API_KEY foi configurada corretamente no Vercel.',
     };
   }
 };
