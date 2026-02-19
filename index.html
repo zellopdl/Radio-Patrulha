@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -8,44 +8,53 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --app-height: 100%;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #020617;
+        body, html { 
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            overflow-x: hidden;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: #020617;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
         }
         #root {
+            height: 100%;
             width: 100%;
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            max-width: 500px; /* Um pouco mais largo para tablets/desktop, mas flexível */
-            background-color: #020617;
-            position: relative;
-            box-shadow: 0 0 100px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-        }
-        /* No mobile real, garantimos que ocupe tudo sem bordas */
-        @media (max-width: 500px) {
-            #root {
-                max-width: 100%;
-                box-shadow: none;
-            }
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .mono { font-family: 'JetBrains Mono', monospace; }
         
-        /* Ajuste para áreas de recorte (notches) em iPhones modernos */
-        .safe-top { padding-top: env(safe-area-inset-top); }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        /* Safe Areas para dispositivos com Notch */
+        .safe-top { padding-top: env(safe-area-inset-top, 20px); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        
+        /* Esconder scrollbars visuais */
+        #root::-webkit-scrollbar {
+            display: none;
+        }
+        #root {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Estilo para desktop: centralizar e simular tela de celular */
+        @media (min-width: 600px) {
+            body {
+                display: flex;
+                justify-content: center;
+                background-color: #000;
+            }
+            #root {
+                max-width: 500px;
+                border-left: 1px solid #1e293b;
+                border-right: 1px solid #1e293b;
+                box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            }
+        }
     </style>
 <script type="importmap">
 {
@@ -59,7 +68,7 @@
 }
 </script>
 </head>
-<body>
+<body class="h-full">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

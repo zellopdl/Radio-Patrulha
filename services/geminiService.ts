@@ -31,49 +31,40 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `Você é um sistema de verificação de ronda. Sua única missão é confirmar se o usuário chegou ao destino.
+            text: `Verifique se o local nas duas fotos é o mesmo.
+            Ignore completamente o alinhamento, a luz e a distância.
+            Se houver qualquer pista (mesmo objeto, mesma cor de parede, mesmo chão) que indique que o usuário está no lugar certo, retorne isCorrectSpot: true.
             
-            IMAGEM 1: Visão atual do usuário.
-            IMAGEM 2: Foto de referência do local.
-            
-            DIRETRIZES DE VALIDAÇÃO (MUITO IMPORTANTE):
-            1. SEJA EXTREMAMENTE PERMISSIVO. Se você reconhecer o mesmo ambiente, o mesmo móvel, o mesmo objeto central ou a mesma parede, diga que está CORRETO.
-            2. NÃO exija alinhamento. O usuário pode estar um pouco mais longe, em um ângulo diferente ou com luz diferente.
-            3. Se houver 40% de chance de ser o mesmo lugar, considere CORRETO (isCorrectSpot: true).
-            4. Ignore borrões de movimento ou granulação.
-            5. O objetivo é ajudar o usuário, não bloqueá-lo por detalhes técnicos.
-            
-            Responda em JSON: 
+            Retorne APENAS um JSON puro, sem markdown, no formato:
             { 
               "isCorrectSpot": boolean, 
               "confidence": number (0-100), 
-              "feedback": "Mensagem curta de incentivo" 
+              "feedback": "string curta" 
             }`,
           },
         ],
       },
       config: {
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isCorrectSpot: { type: Type.BOOLEAN },
-            confidence: { type: Type.NUMBER },
-            feedback: { type: Type.STRING },
-          },
-          required: ['isCorrectSpot', 'confidence', 'feedback'],
-        },
       },
     });
 
-    const result = JSON.parse(response.text || '{}');
-    return result as VisualValidation;
+    // Sanitização para garantir que o JSON seja lido corretamente mesmo com markdown backticks
+    let text = response.text || '{}';
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const result = JSON.parse(text);
+    return {
+      isCorrectSpot: result.isCorrectSpot ?? false,
+      confidence: result.confidence ?? 0,
+      feedback: result.feedback ?? 'Análise concluída'
+    };
   } catch (error) {
     console.error('Visual Validation Error:', error);
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: 'Erro de conexão.'
+      feedback: 'Verifique sua conexão ou tente novamente.'
     };
   }
 };
