@@ -32,20 +32,21 @@ export const validateVisualAnchor = async (
           },
           {
             text: `Aja como um especialista em segurança e geolocalização visual. 
-            A primeira imagem é o que o usuário está vendo AGORA. 
-            A segunda imagem é a REFERÊNCIA do ponto de ronda.
+            A primeira imagem é a visão atual da câmera. 
+            A segunda imagem é a referência salva.
             
-            Sua tarefa é verificar se o usuário encontrou o local correto.
-            REGRAS DE VALIDAÇÃO:
-            1. Seja tolerante: Se os objetos principais, cores e estrutura do ambiente forem os mesmos, considere CORRETO (isCorrectSpot: true).
-            2. Ignore variações leves de luz, sombras ou se o ângulo está ligeiramente diferente (até 30 graus de diferença).
-            3. Se você reconhecer que é o mesmo lugar, dê uma confiança alta.
+            Sua tarefa é verificar se o usuário está de fato no mesmo local ou olhando para o mesmo objeto.
+            REGRAS DE VALIDAÇÃO (SEJA EXTREMAMENTE TOLERANTE):
+            1. NÃO exija alinhamento perfeito. Se os elementos principais (móveis, quadros, cores, portas, objetos específicos) estiverem presentes em ambas as imagens, considere CORRETO.
+            2. Ignore mudanças de iluminação, granulação da imagem ou se a câmera está um pouco mais longe ou perto do que a referência.
+            3. O objetivo é confirmar a presença no local, não a perfeição da sobreposição.
+            4. Se você identificar que se trata do mesmo ambiente ou objeto, responda isCorrectSpot: true.
             
             Responda estritamente em JSON: 
             { 
               "isCorrectSpot": boolean, 
               "confidence": number (0-100), 
-              "feedback": "uma frase curta e motivadora em português" 
+              "feedback": "uma frase curtíssima em português" 
             }`,
           },
         ],
@@ -71,7 +72,7 @@ export const validateVisualAnchor = async (
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: 'Erro na análise visual. Tente alinhar melhor.'
+      feedback: 'Erro na análise visual.'
     };
   }
 };

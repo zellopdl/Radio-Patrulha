@@ -78,12 +78,12 @@ const App: React.FC = () => {
     
     const result = await validateVisualAnchor(capturedBase64, activeLocation.referenceImage);
     
-    // Threshold mais amigável: 45% de confiança já é aceito se a IA disser que é o lugar correto
-    if (result.isCorrectSpot && result.confidence >= 45) {
+    // Reduzi para 30% de confiança + isCorrectSpot para ser bem permissivo
+    if (result.isCorrectSpot && result.confidence >= 30) {
       setIsVerifying(false);
       showMsg("OBJETO LOCALIZADO!", 'success');
       
-      // Espera 2 segundos antes de voltar para a home como solicitado
+      // Espera exatos 2 segundos antes de voltar
       setTimeout(() => {
         setMode(AppMode.DASHBOARD);
         setActiveLocation(null);
@@ -98,10 +98,9 @@ const App: React.FC = () => {
   const showMsg = (text: string, type: any) => {
     setMessage({ text, type });
     if (type === 'error') {
-      const timer = setTimeout(() => setMessage(null), 4000);
+      const timer = setTimeout(() => setMessage(null), 3500);
       return () => clearTimeout(timer);
     }
-    // Sucesso é gerenciado pelo fluxo do handleVerifySpot com 2s
   };
 
   if (mode === AppMode.DASHBOARD) {
