@@ -30,15 +30,18 @@
         
         .mono { font-family: 'JetBrains Mono', monospace; }
         
-        /* Safe Areas para dispositivos com Notch */
-        .safe-top { padding-top: env(safe-area-inset-top, 20px); }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        /* Safe Areas para dispositivos modernos */
+        .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
         
-        /* Oculta scrollbars */
         #root::-webkit-scrollbar { display: none; }
         #root { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Removemos qualquer max-width que pudesse limitar a largura no celular */
+        /* Garantir que o app preencha a largura total */
+        .full-width-container {
+            width: 100vw;
+            max-width: 100%;
+        }
     </style>
 <script type="importmap">
 {

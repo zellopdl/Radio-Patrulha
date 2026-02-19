@@ -1,5 +1,5 @@
 
-import { Camera, Layers, Check } from 'lucide-react';
+import { Camera, Layers, Check, RefreshCw } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ARViewProps {
@@ -13,20 +13,25 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [opacity, setOpacity] = useState(0.5);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
   useEffect(() => {
     const startCamera = async () => {
       try {
         const s = await navigator.mediaDevices.getUserMedia({ 
           video: { 
-            facingMode: 'environment', 
-            // Reduzindo a resolução para otimizar o envio à IA e evitar erro de conexão
-            width: { ideal: 640 }, 
-            height: { ideal: 480 } 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           } 
         });
         setStream(s);
-        if (videoRef.current) videoRef.current.srcObject = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => {
+            setIsCameraReady(true);
+          };
+        }
       } catch (err) {
         console.error("Erro câmera:", err);
       }
@@ -36,25 +41,37 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
   }, []);
 
   const handleCapture = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
+    if (videoRef.current && canvasRef.current && isCameraReady) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
       if (context) {
-        // Capturando em tamanho otimizado para a API
-        canvasRef.current.width = 640;
-        canvasRef.current.height = 480;
-        context.drawImage(videoRef.current, 0, 0, 640, 480);
-        // Qualidade 0.7 reduz significativamente o tamanho do payload base64
-        onCapture(canvasRef.current.toDataURL('image/jpeg', 0.7));
+        // Ajustamos o canvas para as dimensões REAIS do vídeo para evitar distorção
+        // Se o vídeo estiver em pé (retrato), videoWidth/Height refletirão isso
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Comprimimos para JPEG para manter o payload leve, sem alterar a proporção
+        onCapture(canvas.toDataURL('image/jpeg', 0.8));
       }
     }
   };
 
   return (
-    <div className="relative w-full aspect-[3/4] bg-black rounded-[40px] overflow-hidden border-4 border-slate-800 shadow-2xl">
-      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+    <div className="relative w-full aspect-[9/12] bg-black rounded-[40px] overflow-hidden border-4 border-slate-800 shadow-2xl">
+      {/* O video usa object-cover para preencher o container, mas o sensor mantém sua proporção */}
+      <video 
+        ref={videoRef} 
+        autoPlay 
+        playsInline 
+        className="w-full h-full object-cover" 
+      />
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Ghost Overlay - Referência Visual */}
+      {/* Ghost Overlay - Ajustado para cobrir exatamente como o vídeo */}
       {referenceImage && (
         <img 
           src={referenceImage} 
@@ -66,8 +83,8 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
 
       {isVerifying && (
         <div className="absolute inset-0 bg-indigo-900/80 flex flex-col items-center justify-center text-white backdrop-blur-md z-20">
-          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-6" />
-          <p className="font-black tracking-[0.2em] uppercase text-sm animate-pulse">Validando Local...</p>
+          <RefreshCw className="w-12 h-12 animate-spin mb-6 text-indigo-300" />
+          <p className="font-black tracking-[0.2em] uppercase text-sm animate-pulse">Analisando Imagem...</p>
         </div>
       )}
 
@@ -89,7 +106,8 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
           
           <button 
             onClick={handleCapture}
-            className="w-24 h-24 bg-white rounded-full flex items-center justify-center border-[10px] border-slate-300 shadow-2xl active:scale-90 transition-transform"
+            disabled={!isCameraReady}
+            className={`w-20 h-20 bg-white rounded-full flex items-center justify-center border-[8px] border-slate-300/50 shadow-2xl active:scale-90 transition-transform ${!isCameraReady ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {referenceImage ? <Check className="w-10 h-10 text-slate-900" /> : <Camera className="w-10 h-10 text-slate-900" />}
           </button>
