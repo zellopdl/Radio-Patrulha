@@ -1,18 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-export interface ValidationResult {
-  isMatch: boolean;
-  reasoning: string;
+export interface VisualValidation {
+  isCorrectSpot: boolean;
+  confidence: number;
+  feedback: string;
 }
 
-export const validateObject = async (
-  imageBase64: string,
-  targetObject: string
-): Promise<ValidationResult> => {
+export const validateVisualAnchor = async (
+  currentImage: string,
+  referenceImage: string
+): Promise<VisualValidation> => {
   try {
-    // Inicializamos o cliente apenas no momento da chamada para evitar erros de top-level
-    // e garantir que o process.env.API_KEY injetado pelo ambiente esteja disponível.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const response = await ai.models.generateContent({
@@ -22,11 +21,19 @@ export const validateObject = async (
           {
             inlineData: {
               mimeType: 'image/jpeg',
-              data: imageBase64.split(',')[1] || imageBase64,
+              data: currentImage.split(',')[1] || currentImage,
             },
           },
           {
-            text: `Analyze this photo. Does it clearly contain a ${targetObject}? Respond only in JSON format with two fields: 'isMatch' (boolean) and 'reasoning' (a short explanation in Portuguese).`,
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: referenceImage.split(',')[1] || referenceImage,
+            },
+          },
+          {
+            text: `Compare estas duas imagens. A primeira é a visão atual do patrulheiro, a segunda é a foto de referência do local exato. 
+            Verifique se o usuário está na mesma posição e perspectiva (tolerância de alguns centímetros).
+            Responda em JSON: { "isCorrectSpot": boolean, "confidence": number (0-100), "feedback": "texto curto em português" }`,
           },
         ],
       },
@@ -35,24 +42,22 @@ export const validateObject = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            isMatch: { type: Type.BOOLEAN },
-            reasoning: { type: Type.STRING },
+            isCorrectSpot: { type: Type.BOOLEAN },
+            confidence: { type: Type.NUMBER },
+            feedback: { type: Type.STRING },
           },
-          required: ['isMatch', 'reasoning'],
+          required: ['isCorrectSpot', 'confidence', 'feedback'],
         },
       },
     });
 
-    if (!response.text) {
-      throw new Error("Resposta vazia da IA");
-    }
-
-    return JSON.parse(response.text) as ValidationResult;
+    return JSON.parse(response.text || '{}') as VisualValidation;
   } catch (error) {
-    console.error('Gemini Validation Error:', error);
+    console.error('Visual Validation Error:', error);
     return {
-      isMatch: false,
-      reasoning: 'Erro ao conectar com o servidor de IA. Verifique se a API_KEY foi configurada corretamente no Vercel.',
+      isCorrectSpot: false,
+      confidence: 0,
+      feedback: 'Erro na análise visual. Tente alinhar melhor.'
     };
   }
 };

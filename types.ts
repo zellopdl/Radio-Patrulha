@@ -11,6 +11,7 @@ export interface SavedLocation {
   name: string;
   latitude: number;
   longitude: number;
+  referenceImage?: string; // Base64 da foto de referência para AR
   createdAt: number;
 }
 
@@ -21,7 +22,7 @@ export enum AppMode {
 }
 
 export interface NavigationState {
-  distance: number; // metros
-  bearing: number; // graus
+  distance: number;
+  bearing: number;
   instruction: 'STRAIGHT' | 'LEFT' | 'RIGHT' | 'BACK' | 'ARRIVED';
 }

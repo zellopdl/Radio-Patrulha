@@ -1,7 +1,8 @@
 {
-  "name": "PatrolGuard GPS",
-  "description": "Sistema de ronda baseado em check-points GPS com cadastro e navegação.",
+  "name": "PatrolGuard AR",
+  "description": "Sistema de ronda com precisão centimétrica via AR Visual e GPS.",
   "requestFramePermissions": [
+    "camera",
     "geolocation"
   ]
 }
