@@ -12,21 +12,21 @@ interface NavigationHudProps {
 
 const NavigationHud: React.FC<NavigationHudProps> = ({ navState, targetName, currentCoords, targetCoords }) => {
   const distanceTheme = useMemo(() => {
-    if (navState.distance < 10) return { color: 'text-green-400', glow: 'shadow-green-500/20', border: 'border-green-500/30', label: 'MUITO PERTO' };
-    if (navState.distance < 30) return { color: 'text-emerald-400', glow: 'shadow-emerald-500/20', border: 'border-emerald-500/30', label: 'PRÓXIMO' };
-    if (navState.distance < 100) return { color: 'text-yellow-400', glow: 'shadow-yellow-500/20', border: 'border-yellow-500/30', label: 'MÉDIA DISTÂNCIA' };
-    return { color: 'text-orange-400', glow: 'shadow-orange-500/20', border: 'border-orange-500/30', label: 'LONGE' };
+    if (navState.distance < 10) return { color: 'text-emerald-600', glow: 'shadow-emerald-500/10', border: 'border-emerald-200', bg: 'bg-emerald-50', label: 'MUITO PERTO' };
+    if (navState.distance < 30) return { color: 'text-blue-600', glow: 'shadow-blue-500/10', border: 'border-blue-200', bg: 'bg-blue-50', label: 'PRÓXIMO' };
+    if (navState.distance < 100) return { color: 'text-amber-600', glow: 'shadow-amber-500/10', border: 'border-amber-200', bg: 'bg-amber-50', label: 'MÉDIA DISTÂNCIA' };
+    return { color: 'text-slate-600', glow: 'shadow-slate-500/10', border: 'border-slate-200', bg: 'bg-slate-50', label: 'LONGE' };
   }, [navState.distance]);
 
   const DirectionIcon = () => {
     const s = "w-32 h-32 transition-transform duration-500";
     switch (navState.instruction) {
-      case 'STRAIGHT': return <ArrowUp className={`${s} text-green-400 animate-bounce`} />;
-      case 'LEFT': return <ArrowLeft className={`${s} text-blue-400 animate-pulse`} />;
-      case 'RIGHT': return <ArrowRight className={`${s} text-blue-400 animate-pulse`} />;
-      case 'BACK': return <ArrowDown className={`${s} text-red-500`} />;
-      case 'ARRIVED': return <Target className={`${s} text-yellow-400 scale-110`} />;
-      default: return <Navigation className={`${s} text-slate-700`} />;
+      case 'STRAIGHT': return <ArrowUp className={`${s} text-emerald-500 animate-bounce`} />;
+      case 'LEFT': return <ArrowLeft className={`${s} text-indigo-500 animate-pulse`} />;
+      case 'RIGHT': return <ArrowRight className={`${s} text-indigo-500 animate-pulse`} />;
+      case 'BACK': return <ArrowDown className={`${s} text-rose-500`} />;
+      case 'ARRIVED': return <Target className={`${s} text-amber-500 scale-110`} />;
+      default: return <Navigation className={`${s} text-slate-300`} />;
     }
   };
 
@@ -44,12 +44,12 @@ const NavigationHud: React.FC<NavigationHudProps> = ({ navState, targetName, cur
   return (
     <div className="flex flex-col space-y-6 w-full animate-in fade-in slide-in-from-bottom-10 duration-700">
       {/* Container de Radar e Distância */}
-      <div className={`relative bg-slate-900/50 rounded-[50px] border-2 ${distanceTheme.border} p-10 flex flex-col items-center shadow-2xl backdrop-blur-md overflow-hidden`}>
+      <div className={`relative bg-white rounded-[50px] border ${distanceTheme.border} p-10 flex flex-col items-center shadow-lg overflow-hidden`}>
         {/* Background Radar Rings */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-          <div className="w-full aspect-square border border-white/20 rounded-full animate-ping" />
-          <div className="w-3/4 aspect-square border border-white/20 rounded-full absolute" />
-          <div className="w-1/2 aspect-square border border-white/20 rounded-full absolute" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+          <div className="w-full aspect-square border-2 border-slate-900 rounded-full animate-ping" />
+          <div className="w-3/4 aspect-square border-2 border-slate-900 rounded-full absolute" />
+          <div className="w-1/2 aspect-square border-2 border-slate-900 rounded-full absolute" />
         </div>
 
         <div className="relative z-10 flex flex-col items-center">
@@ -64,11 +64,11 @@ const NavigationHud: React.FC<NavigationHudProps> = ({ navState, targetName, cur
             <span className="text-2xl font-bold ml-2">m</span>
           </div>
 
-          <div className="p-6 bg-slate-950/60 rounded-full border border-white/5 shadow-inner mb-6">
+          <div className="p-6 bg-slate-50 rounded-full border border-slate-100 shadow-inner mb-6">
             <DirectionIcon />
           </div>
 
-          <div className={`px-8 py-3 rounded-2xl font-black text-xl tracking-wider mb-2 bg-white/5 border border-white/10 ${distanceTheme.color} text-center`}>
+          <div className={`px-8 py-3 rounded-2xl font-black text-xl tracking-wider mb-2 bg-slate-900 text-white text-center`}>
             {instructionLabel()}
           </div>
         </div>
@@ -76,26 +76,26 @@ const NavigationHud: React.FC<NavigationHudProps> = ({ navState, targetName, cur
 
       {/* Grid de Coordenadas Táticas */}
       <div className="grid grid-cols-1 gap-3">
-        <div className="bg-slate-900 p-5 rounded-[30px] border border-slate-800 shadow-lg">
-          <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sua Posição</span>
+        <div className="bg-white p-5 rounded-[30px] border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-50 pb-2">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sua Posição</span>
             <div className="flex items-center space-x-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">Sinal GPS Ativo</span>
+              <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">Sinal GPS Ativo</span>
             </div>
           </div>
-          <div className="flex justify-between text-[11px] font-mono font-bold text-slate-300">
+          <div className="flex justify-between text-[11px] font-mono font-bold text-slate-600">
             <span>LAT: {currentCoords?.latitude.toFixed(6) || '---'}</span>
             <span>LNG: {currentCoords?.longitude.toFixed(6) || '---'}</span>
           </div>
         </div>
 
-        <div className="bg-indigo-600/10 p-5 rounded-[30px] border border-indigo-500/20 shadow-lg">
-          <div className="flex items-center justify-between mb-3 border-b border-indigo-500/10 pb-2">
-            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Ponto Salvo</span>
-            <Zap className="w-3 h-3 text-indigo-500" />
+        <div className="bg-indigo-50 p-5 rounded-[30px] border border-indigo-100 shadow-sm">
+          <div className="flex items-center justify-between mb-3 border-b border-indigo-100/50 pb-2">
+            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Ponto Salvo</span>
+            <Zap className="w-3 h-3 text-indigo-400" />
           </div>
-          <div className="flex justify-between text-[11px] font-mono font-bold text-indigo-300">
+          <div className="flex justify-between text-[11px] font-mono font-bold text-indigo-600">
             <span>LAT: {targetCoords.latitude.toFixed(6)}</span>
             <span>LNG: {targetCoords.longitude.toFixed(6)}</span>
           </div>
@@ -103,12 +103,12 @@ const NavigationHud: React.FC<NavigationHudProps> = ({ navState, targetName, cur
       </div>
 
       {/* Signal Accuracy */}
-      <div className="flex items-center justify-between px-8 py-4 bg-slate-900/40 rounded-[25px] border border-slate-800 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-8 py-4 bg-white rounded-[25px] border border-slate-200 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className={`w-2 h-2 rounded-full ${currentCoords && (currentCoords.accuracy || 100) < 15 ? 'bg-green-500' : 'bg-orange-500'} shadow-lg`} />
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Precisão GPS</span>
+          <div className={`w-2 h-2 rounded-full ${currentCoords && (currentCoords.accuracy || 100) < 15 ? 'bg-emerald-500' : 'bg-amber-500'} shadow-lg`} />
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Precisão GPS</span>
         </div>
-        <span className="text-xs font-black text-white mono">±{currentCoords?.accuracy?.toFixed(1) || '0'}m</span>
+        <span className="text-xs font-black text-slate-900 mono">±{currentCoords?.accuracy?.toFixed(1) || '0'}m</span>
       </div>
     </div>
   );

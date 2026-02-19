@@ -21,8 +21,8 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
         const s = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
           } 
         });
         setStream(s);
@@ -47,22 +47,16 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
       const context = canvas.getContext('2d');
       
       if (context) {
-        // Ajustamos o canvas para as dimensões REAIS do vídeo para evitar distorção
-        // Se o vídeo estiver em pé (retrato), videoWidth/Height refletirão isso
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Comprimimos para JPEG para manter o payload leve, sem alterar a proporção
         onCapture(canvas.toDataURL('image/jpeg', 0.8));
       }
     }
   };
 
   return (
-    <div className="relative w-full aspect-[9/12] bg-black rounded-[40px] overflow-hidden border-4 border-slate-800 shadow-2xl">
-      {/* O video usa object-cover para preencher o container, mas o sensor mantém sua proporção */}
+    <div className="relative w-full flex-1 aspect-[9/12] bg-slate-200 rounded-[40px] overflow-hidden border-4 border-white shadow-xl">
       <video 
         ref={videoRef} 
         autoPlay 
@@ -71,35 +65,35 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
       />
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Ghost Overlay - Ajustado para cobrir exatamente como o vídeo */}
+      {/* Sobreposição de Referência (Ghost Mode) */}
       {referenceImage && (
         <img 
           src={referenceImage} 
           className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300"
-          style={{ opacity: opacity, mixBlendMode: 'screen' }}
-          alt="Referência AR"
+          style={{ opacity: opacity, mixBlendMode: 'multiply' }}
+          alt="Referência Visual"
         />
       )}
 
       {isVerifying && (
-        <div className="absolute inset-0 bg-indigo-900/80 flex flex-col items-center justify-center text-white backdrop-blur-md z-20">
-          <RefreshCw className="w-12 h-12 animate-spin mb-6 text-indigo-300" />
-          <p className="font-black tracking-[0.2em] uppercase text-sm animate-pulse">Analisando Imagem...</p>
+        <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-slate-900 backdrop-blur-md z-20">
+          <RefreshCw className="w-14 h-14 animate-spin mb-6 text-indigo-600" />
+          <p className="font-black tracking-[0.2em] uppercase text-xs animate-pulse">Comparando Imagens...</p>
         </div>
       )}
 
-      {/* Controles de AR */}
+      {/* Controles de Captura e Opacidade */}
       {!isVerifying && (
-        <div className="absolute bottom-6 inset-x-0 flex flex-col items-center space-y-4 px-8 z-10">
+        <div className="absolute bottom-8 inset-x-0 flex flex-col items-center space-y-5 px-10 z-10">
           {referenceImage && (
-            <div className="w-full flex items-center space-x-3 bg-black/60 backdrop-blur-md p-3 rounded-2xl border border-white/10">
-              <Layers className="w-4 h-4 text-white/60" />
+            <div className="w-full flex items-center space-x-3 bg-white/90 backdrop-blur-md p-4 rounded-3xl border border-slate-100 shadow-lg">
+              <Layers className="w-4 h-4 text-slate-400" />
               <input 
                 type="range" 
                 min="0" max="1" step="0.01" 
                 value={opacity} 
                 onChange={(e) => setOpacity(parseFloat(e.target.value))}
-                className="flex-1 accent-indigo-500"
+                className="flex-1 accent-indigo-600 h-1"
               />
             </div>
           )}
@@ -107,9 +101,9 @@ const ARView: React.FC<ARViewProps> = ({ referenceImage, onCapture, isVerifying 
           <button 
             onClick={handleCapture}
             disabled={!isCameraReady}
-            className={`w-20 h-20 bg-white rounded-full flex items-center justify-center border-[8px] border-slate-300/50 shadow-2xl active:scale-90 transition-transform ${!isCameraReady ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center border-[10px] border-white shadow-2xl active:scale-90 transition-transform ${!isCameraReady ? 'opacity-50' : ''}`}
           >
-            {referenceImage ? <Check className="w-10 h-10 text-slate-900" /> : <Camera className="w-10 h-10 text-slate-900" />}
+            {referenceImage ? <Check className="w-10 h-10 text-white" /> : <Camera className="w-10 h-10 text-white" />}
           </button>
         </div>
       )}
