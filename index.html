@@ -3,26 +3,64 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PatrolGuard GPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.33); opacity: 1; }
-            80%, 100% { transform: scale(1.5); opacity: 0; }
+        :root {
+            --app-height: 100%;
         }
-        .animate-pulse-ring::before {
-            content: '';
-            position: absolute;
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #root {
             width: 100%;
-            height: 100%;
-            background-color: inherit;
+            height: 100vh;
+            max-width: 450px; /* Limite de largura para simular celular */
+            max-height: 900px; /* Limite de altura para simular celular */
+            background-color: #020617;
+            position: relative;
+            box-shadow: 0 0 100px rgba(0,0,0,0.5), 0 0 20px rgba(79, 70, 229, 0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            overflow-y: auto;
+        }
+        /* Scrollbar escondida para estética mobile */
+        #root::-webkit-scrollbar {
+            display: none;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        @keyframes radar-pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .radar-ring {
+            position: absolute;
+            border: 2px solid rgba(79, 70, 229, 0.3);
             border-radius: 50%;
-            z-index: -1;
-            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+            animation: radar-pulse 2s infinite;
+        }
+
+        /* Estética de entalhe de celular (opcional) */
+        .mobile-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 25px;
+            background: #020617;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            z-index: 1000;
         }
     </style>
 <script type="importmap">
@@ -37,8 +75,10 @@
 }
 </script>
 </head>
-<body class="bg-slate-900 text-slate-100 overflow-x-hidden">
-    <div id="root"></div>
+<body>
+    <div id="root">
+        <div class="mobile-notch"></div>
+    </div>
     <script type="module" src="./index.tsx"></script>
 </body>
 </html>
