@@ -16,6 +16,7 @@
             background-color: #020617;
             overflow: hidden;
             font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         #root {
             height: 100%;
@@ -24,6 +25,7 @@
             flex-direction: column;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            background-color: #020617;
         }
         
         .mono { font-family: 'JetBrains Mono', monospace; }
@@ -32,29 +34,11 @@
         .safe-top { padding-top: env(safe-area-inset-top, 20px); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
         
-        /* Esconder scrollbars visuais */
-        #root::-webkit-scrollbar {
-            display: none;
-        }
-        #root {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        /* Oculta scrollbars */
+        #root::-webkit-scrollbar { display: none; }
+        #root { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Estilo para desktop: centralizar e simular tela de celular */
-        @media (min-width: 600px) {
-            body {
-                display: flex;
-                justify-content: center;
-                background-color: #000;
-            }
-            #root {
-                max-width: 500px;
-                border-left: 1px solid #1e293b;
-                border-right: 1px solid #1e293b;
-                box-shadow: 0 0 100px rgba(0,0,0,0.8);
-            }
-        }
+        /* Removemos qualquer max-width que pudesse limitar a largura no celular */
     </style>
 <script type="importmap">
 {

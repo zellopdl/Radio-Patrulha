@@ -14,6 +14,10 @@ export const validateVisualAnchor = async (
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
+    // Removemos o cabeçalho base64 para evitar strings duplicadas e reduzir payload
+    const currentData = currentImage.includes(',') ? currentImage.split(',')[1] : currentImage;
+    const referenceData = referenceImage.includes(',') ? referenceImage.split(',')[1] : referenceImage;
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
@@ -21,50 +25,43 @@ export const validateVisualAnchor = async (
           {
             inlineData: {
               mimeType: 'image/jpeg',
-              data: currentImage.split(',')[1] || currentImage,
+              data: currentData,
             },
           },
           {
             inlineData: {
               mimeType: 'image/jpeg',
-              data: referenceImage.split(',')[1] || referenceImage,
+              data: referenceData,
             },
           },
           {
-            text: `Verifique se o local nas duas fotos é o mesmo.
-            Ignore completamente o alinhamento, a luz e a distância.
-            Se houver qualquer pista (mesmo objeto, mesma cor de parede, mesmo chão) que indique que o usuário está no lugar certo, retorne isCorrectSpot: true.
-            
-            Retorne APENAS um JSON puro, sem markdown, no formato:
-            { 
-              "isCorrectSpot": boolean, 
-              "confidence": number (0-100), 
-              "feedback": "string curta" 
-            }`,
+            text: `Verifique se o local nas duas fotos é o mesmo ambiente ou objeto.
+            REGRAS: 
+            1. NÃO exija alinhamento. 
+            2. Se houver qualquer semelhança visual (mesmo objeto central, cor de parede ou padrão), considere CORRETO.
+            3. Responda APENAS um JSON: {"isCorrectSpot": boolean, "confidence": number, "feedback": "texto"}.`,
           },
         ],
-      },
-      config: {
-        responseMimeType: 'application/json',
-      },
+      }
     });
 
-    // Sanitização para garantir que o JSON seja lido corretamente mesmo com markdown backticks
-    let text = response.text || '{}';
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    let text = response.text || '';
+    // Limpeza agressiva de markdown para evitar erro de JSON.parse
+    text = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
     
     const result = JSON.parse(text);
     return {
-      isCorrectSpot: result.isCorrectSpot ?? false,
+      isCorrectSpot: !!result.isCorrectSpot,
       confidence: result.confidence ?? 0,
-      feedback: result.feedback ?? 'Análise concluída'
+      feedback: result.feedback ?? 'Validado'
     };
   } catch (error) {
-    console.error('Visual Validation Error:', error);
+    console.error('Gemini API Error:', error);
+    // Em caso de erro de conexão, vamos ser amigáveis e permitir uma segunda tentativa ou logar o erro
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: 'Verifique sua conexão ou tente novamente.'
+      feedback: 'Erro ao conectar. Verifique sua internet.'
     };
   }
 };
