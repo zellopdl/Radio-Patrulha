@@ -36,16 +36,19 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `VOCÊ É UM ASSISTENTE DE RONDA. 
-            A primeira imagem é a visão atual do segurança. A segunda é o local que ele deve visitar.
+            text: `AJA COMO UM SISTEMA DE VISÃO COMPUTACIONAL INTELIGENTE.
+            Você deve comparar a IMAGEM 1 (câmera atual) com a IMAGEM 2 (referência salva).
             
-            MISSÃO: Confirmar se ele chegou ao destino.
-            REGRA DE OURO: Seja EXTREMAMENTE TOLERANTE. 
-            Ignore: ângulo, iluminação, objetos novos no cenário, desordem ou qualidade da foto.
-            Confirme (isCorrectSpot: true) se as cores das paredes, o tipo de móvel ou o ambiente geral PARECEREM os mesmos.
+            DIRETRIZES DE RECONHECIMENTO:
+            1. IDENTIDADE DO OBJETO: Se o objeto principal for o mesmo (ex: uma cafeteira, um monitor, uma planta específica), considere um acerto.
+            2. TOLERÂNCIA: Ignore variações de iluminação, ângulo, sombras, desordem na mesa ou se o objeto foi levemente movido.
+            3. DIFERENCIAÇÃO: Não confunda objetos de classes diferentes (ex: não confunda uma xícara com um computador).
+            4. AMBIENTE: Se o objeto não for claro, mas o fundo (parede, móveis ao redor) for claramente o mesmo lugar, considere um acerto.
+            
+            Se houver pelo menos 40% de semelhança contextual, marque "isCorrectSpot" como true.
             
             Responda APENAS com este JSON: 
-            {"isCorrectSpot": boolean, "confidence": number, "feedback": "uma frase curta de incentivo"}`,
+            {"isCorrectSpot": boolean, "confidence": number, "feedback": "string curta e motivadora"}`,
           },
         ],
       },
@@ -54,7 +57,7 @@ export const validateVisualAnchor = async (
       }
     });
 
-    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Tentando novamente..."}';
+    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Tentando alinhar..."}';
     const cleanText = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
     
     return JSON.parse(cleanText);
@@ -63,7 +66,7 @@ export const validateVisualAnchor = async (
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: "Aguardando sinal estável..."
+      feedback: "Problema de conexão com a visão IA."
     };
   }
 };
