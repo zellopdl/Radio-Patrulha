@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Navigation, MapPin, Trash2, ChevronLeft, 
-  Save, Target, Sparkles, AlertCircle
+  Save, Target, Sparkles, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { AppMode, SavedLocation, Coordinates, NavigationState } from './types';
 import { getNavigationInstruction } from './utils/geoUtils';
@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [navState, setNavState] = useState<NavigationState | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [successState, setSuccessState] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
   
   const arRef = useRef<ARViewHandle>(null);
@@ -46,9 +47,10 @@ const App: React.FC = () => {
     }
   }, [currentCoords, activeLocation]);
 
+  // Lógica de Reconhecimento Automático
   useEffect(() => {
     const isNear = navState?.distance !== undefined && navState.distance < 10.0;
-    const canScan = mode === AppMode.PATROL && activeLocation && isNear && !isVerifying;
+    const canScan = mode === AppMode.PATROL && activeLocation && isNear && !isVerifying && !successState;
 
     if (canScan) {
       if (!scanIntervalRef.current) {
@@ -59,44 +61,47 @@ const App: React.FC = () => {
               await handleAutoVerify(frame, activeLocation.referenceImage);
             }
           }
-        }, 4500); // Intervalo ligeiramente maior para dar tempo à API
+        }, 4000);
       }
     } else {
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-        scanIntervalRef.current = null;
-      }
+      stopScanning();
     }
 
-    return () => {
-      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
-    };
-  }, [navState?.distance, mode, activeLocation, isVerifying]);
+    return () => stopScanning();
+  }, [navState?.distance, mode, activeLocation, isVerifying, successState]);
+
+  const stopScanning = () => {
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+  };
 
   const handleAutoVerify = async (frame: string, reference: string) => {
     setIsVerifying(true);
     const result = await validateVisualAnchor(frame, reference);
     
-    if (result.isCorrectSpot || result.confidence >= 20) {
-      showMsg("LOCAL CONFIRMADO!", 'success');
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-        scanIntervalRef.current = null;
-      }
+    // Critério de sucesso ultra-leniente: confia se o Gemini disser que é o lugar
+    if (result.isCorrectSpot || result.confidence >= 15) {
+      stopScanning();
+      setIsVerifying(false);
+      setSuccessState(true);
+      showMsg("LOCALIZAÇÃO CONFIRMADA!", 'success');
+      
+      // Feedback Visual de Parabéns e Retorno
       setTimeout(() => {
         setMode(AppMode.DASHBOARD);
         setActiveLocation(null);
-        setIsVerifying(false);
-      }, 1000); // Retorna rápido após confirmação
+        setSuccessState(false);
+      }, 3000);
     } else {
-      // Pequeno delay antes de liberar o próximo scan para evitar overlap
       setTimeout(() => setIsVerifying(false), 500);
     }
   };
 
   const handleSaveLocation = () => {
     if (!currentCoords || !newName.trim() || !referenceImage) {
-      showMsg("Preencha tudo!", "error");
+      showMsg("Preencha todos os campos!", "error");
       return;
     }
     const newLoc = db.saveLocation({
@@ -114,8 +119,7 @@ const App: React.FC = () => {
 
   const showMsg = (text: string, type: 'success' | 'error' | 'info') => {
     setMessage({ text, type });
-    const duration = type === 'success' ? 1000 : 3000;
-    setTimeout(() => setMessage(null), duration);
+    setTimeout(() => setMessage(null), type === 'success' ? 2500 : 4000);
   };
 
   return (
@@ -127,7 +131,7 @@ const App: React.FC = () => {
               <Target className="text-white w-8 h-8" />
             </div>
             <h1 className="text-3xl font-black text-slate-900 uppercase">Patrol<span className="text-indigo-600">Guard</span></h1>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Ronda Digital</p>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Gestão de Ronda Inteligente</p>
           </header>
 
           <div className="px-6 space-y-6 flex-1">
@@ -138,14 +142,14 @@ const App: React.FC = () => {
               <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mb-3">
                 <Plus className="w-6 h-6 text-indigo-600" />
               </div>
-              <span className="font-bold text-xs uppercase tracking-widest text-slate-500">Novo Ponto de Ronda</span>
+              <span className="font-bold text-xs uppercase tracking-widest text-slate-500">Novo Ponto</span>
             </button>
 
             <div className="space-y-4 pb-20">
-              <h2 className="text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2">Pontos Salvos</h2>
+              <h2 className="text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2">Roteiro de Ronda</h2>
               {locations.length === 0 && (
                 <div className="text-center py-10 bg-white/50 rounded-[40px] border border-dashed border-slate-200 text-slate-300 text-xs italic">
-                  Nenhum local cadastrado
+                  Lista vazia
                 </div>
               )}
               {locations.map(loc => (
@@ -158,7 +162,7 @@ const App: React.FC = () => {
                       <h3 className="font-bold text-slate-800 text-base truncate">{loc.name}</h3>
                       <div className="flex items-center text-[9px] text-indigo-500 font-black uppercase mt-0.5">
                         <Navigation className="w-2.5 h-2.5 mr-1" />
-                        <span>Ir para Local</span>
+                        <span>Iniciar</span>
                       </div>
                     </div>
                   </div>
@@ -179,20 +183,31 @@ const App: React.FC = () => {
               <ChevronLeft className="w-6 h-6 text-slate-900" />
             </button>
             <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Em Rota</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Local Atual</span>
               <span className="text-slate-900 font-bold truncate max-w-[180px]">{activeLocation.name}</span>
             </div>
             <div className="w-14"></div>
           </header>
 
           <main className="flex-1 flex flex-col justify-center px-6 pb-12">
-            {(!currentCoords || (navState?.distance || 100) >= 10.0) ? (
+            {successState ? (
+              <div className="flex flex-col items-center justify-center space-y-6 animate-in zoom-in duration-500">
+                <div className="w-32 h-32 bg-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/40 animate-bounce">
+                  <CheckCircle2 className="w-16 h-16 text-white" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-3xl font-black text-slate-900 uppercase">Excelente!</h2>
+                  <p className="text-slate-500 font-bold mt-2">Ponto de ronda validado com sucesso.</p>
+                  <p className="text-indigo-600 text-xs font-black uppercase tracking-widest mt-8 animate-pulse">Retornando ao menu...</p>
+                </div>
+              </div>
+            ) : (!currentCoords || (navState?.distance || 100) >= 10.0) ? (
               <NavigationHud navState={navState || { distance: 0, bearing: 0, instruction: 'STRAIGHT' }} targetName={activeLocation.name} currentCoords={currentCoords} targetCoords={activeLocation} />
             ) : (
-              <div className="space-y-6 animate-in fade-in zoom-in-95">
+              <div className="space-y-6 animate-in fade-in">
                  <div className="text-center bg-indigo-50 p-6 rounded-[40px] border border-indigo-100 shadow-sm">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Reconhecimento Ativo</p>
-                    <p className="text-slate-900 text-sm font-bold mt-1">Aponte a câmera para o objeto</p>
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Sistema de Visão</p>
+                    <p className="text-slate-900 text-sm font-bold mt-1">Aponte para o local/objeto</p>
                  </div>
                  <ARView ref={arRef} referenceImage={activeLocation.referenceImage} onCapture={() => {}} isVerifying={isVerifying} autoMode={true} />
               </div>
@@ -207,7 +222,7 @@ const App: React.FC = () => {
             <button onClick={() => setMode(AppMode.DASHBOARD)} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <ChevronLeft className="w-6 h-6 text-slate-900" />
             </button>
-            <span className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Novo Registro</span>
+            <span className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Nova Referência</span>
             <div className="w-10"></div>
           </header>
           
@@ -225,11 +240,11 @@ const App: React.FC = () => {
               </div>
               <input 
                 type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
-                placeholder="Identifique este local..."
-                className="w-full bg-white border border-slate-200 p-5 rounded-[25px] text-base font-bold text-slate-900 outline-none shadow-sm mb-6 focus:border-indigo-500 transition-colors"
+                placeholder="Nome do local..."
+                className="w-full bg-white border border-slate-200 p-5 rounded-[25px] text-base font-bold text-slate-900 outline-none shadow-sm mb-6"
               />
-              <button onClick={handleSaveLocation} className="w-full bg-indigo-600 py-6 rounded-[30px] font-black text-base shadow-xl shadow-indigo-600/30 text-white flex items-center justify-center space-x-3 active:scale-95 transition-all">
-                <Save className="w-6 h-6" /> <span>SALVAR PONTO</span>
+              <button onClick={handleSaveLocation} className="w-full bg-indigo-600 py-6 rounded-[30px] font-black text-base shadow-xl text-white flex items-center justify-center space-x-3 active:scale-95 transition-all">
+                <Save className="w-6 h-6" /> <span>SALVAR LOCAL</span>
               </button>
             </div>
           )}
@@ -237,7 +252,7 @@ const App: React.FC = () => {
       )}
 
       {message && (
-        <div className={`fixed bottom-10 inset-x-6 p-6 rounded-[35px] border shadow-2xl backdrop-blur-xl flex items-center space-x-4 z-50 animate-in fade-in slide-in-from-bottom-10 ${message.type === 'success' ? 'bg-emerald-500/90 border-emerald-400 shadow-emerald-500/20' : 'bg-rose-500/90 border-rose-400 shadow-rose-500/20'}`}>
+        <div className={`fixed bottom-10 inset-x-6 p-6 rounded-[35px] border shadow-2xl backdrop-blur-xl flex items-center space-x-4 z-50 animate-in fade-in slide-in-from-bottom-10 ${message.type === 'success' ? 'bg-emerald-500/95 border-emerald-400' : 'bg-rose-500/95 border-rose-400'}`}>
           <div className="p-2 bg-white/20 rounded-full shrink-0">
             {message.type === 'success' ? <Sparkles className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white" />}
           </div>

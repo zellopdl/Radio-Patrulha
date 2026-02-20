@@ -14,7 +14,6 @@ export const validateVisualAnchor = async (
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Purifica o base64 removendo o prefixo data:image/jpeg;base64,
     const cleanBase64 = (base64: string) => {
       const parts = base64.split(',');
       return parts.length > 1 ? parts[1] : parts[0];
@@ -37,10 +36,16 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `AJA COMO UM SISTEMA DE SEGURANÇA.
-            Sua tarefa é validar se o local nas duas fotos é o mesmo.
-            Seja EXTREMAMENTE PERMISSIVO. Se houver qualquer semelhança de contexto (mesmo objeto, móvel, parede ou chão), considere correto.
-            Retorne APENAS um JSON: {"isCorrectSpot": boolean, "confidence": number, "feedback": "string curta"}`,
+            text: `VOCÊ É UM ASSISTENTE DE RONDA. 
+            A primeira imagem é a visão atual do segurança. A segunda é o local que ele deve visitar.
+            
+            MISSÃO: Confirmar se ele chegou ao destino.
+            REGRA DE OURO: Seja EXTREMAMENTE TOLERANTE. 
+            Ignore: ângulo, iluminação, objetos novos no cenário, desordem ou qualidade da foto.
+            Confirme (isCorrectSpot: true) se as cores das paredes, o tipo de móvel ou o ambiente geral PARECEREM os mesmos.
+            
+            Responda APENAS com este JSON: 
+            {"isCorrectSpot": boolean, "confidence": number, "feedback": "uma frase curta de incentivo"}`,
           },
         ],
       },
@@ -49,17 +54,16 @@ export const validateVisualAnchor = async (
       }
     });
 
-    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Erro na resposta"}';
+    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Tentando novamente..."}';
     const cleanText = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
     
     return JSON.parse(cleanText);
   } catch (error: any) {
     console.error('Gemini API Error:', error);
-    // Retorna um erro silencioso para o modo automático não travar
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: `Erro: ${error?.message || 'Conexão'}`
+      feedback: "Aguardando sinal estável..."
     };
   }
 };
