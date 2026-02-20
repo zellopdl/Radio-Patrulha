@@ -8,12 +8,12 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-// Registro do Service Worker
-if ('serviceWorker' in navigator) {
+// Registro seguro do Service Worker
+if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.log('SW registration failed: ', err);
-    });
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW pronto:', reg.scope))
+      .catch(err => console.warn('SW ignorado:', err));
   });
 }
 

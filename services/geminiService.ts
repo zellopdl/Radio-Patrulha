@@ -14,9 +14,11 @@ export const validateVisualAnchor = async (
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    // Limpeza de base64 para garantir envio puro
-    const currentData = currentImage.includes(',') ? currentImage.split(',')[1] : currentImage;
-    const referenceData = referenceImage.includes(',') ? referenceImage.split(',')[1] : referenceImage;
+    // Purifica o base64 removendo o prefixo data:image/jpeg;base64,
+    const cleanBase64 = (base64: string) => {
+      const parts = base64.split(',');
+      return parts.length > 1 ? parts[1] : parts[0];
+    };
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -25,22 +27,20 @@ export const validateVisualAnchor = async (
           {
             inlineData: {
               mimeType: 'image/jpeg',
-              data: currentData,
+              data: cleanBase64(currentImage),
             },
           },
           {
             inlineData: {
               mimeType: 'image/jpeg',
-              data: referenceData,
+              data: cleanBase64(referenceImage),
             },
           },
           {
-            text: `Comparação visual ultra-tolerante para ronda.
-            A imagem 1 é a câmera atual. A imagem 2 é a referência.
-            Objetivo: Confirmar se o usuário está no mesmo lugar.
-            Considere: mesmas cores de parede, objetos próximos, mesmo tipo de móvel ou textura de chão.
-            Ignore: iluminação, ângulo, desordem ou pessoas.
-            Responda EXCLUSIVAMENTE em JSON: {"isCorrectSpot": boolean, "confidence": number, "feedback": "string curta"}`,
+            text: `AJA COMO UM SISTEMA DE SEGURANÇA.
+            Sua tarefa é validar se o local nas duas fotos é o mesmo.
+            Seja EXTREMAMENTE PERMISSIVO. Se houver qualquer semelhança de contexto (mesmo objeto, móvel, parede ou chão), considere correto.
+            Retorne APENAS um JSON: {"isCorrectSpot": boolean, "confidence": number, "feedback": "string curta"}`,
           },
         ],
       },
@@ -49,22 +49,17 @@ export const validateVisualAnchor = async (
       }
     });
 
-    let text = response.text || '';
-    text = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
+    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Erro na resposta"}';
+    const cleanText = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
     
-    const result = JSON.parse(text);
-    return {
-      isCorrectSpot: !!result.isCorrectSpot,
-      confidence: result.confidence ?? 0,
-      feedback: result.feedback ?? 'Validado'
-    };
-  } catch (error) {
+    return JSON.parse(cleanText);
+  } catch (error: any) {
     console.error('Gemini API Error:', error);
-    // Se falhar a conexão, não queremos travar o app no modo auto-scan
+    // Retorna um erro silencioso para o modo automático não travar
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: 'Erro de comunicação temporário.'
+      feedback: `Erro: ${error?.message || 'Conexão'}`
     };
   }
 };

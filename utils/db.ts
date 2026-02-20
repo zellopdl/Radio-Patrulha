@@ -5,14 +5,19 @@ const STORAGE_KEY = 'patrol_guard_locations';
 
 export const db = {
   getLocations: (): SavedLocation[] => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Erro ao ler DB:", e);
+      return [];
+    }
   },
   saveLocation: (loc: Omit<SavedLocation, 'id' | 'createdAt'>) => {
     const locations = db.getLocations();
     const newLoc: SavedLocation = {
       ...loc,
-      id: crypto.randomUUID(),
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
       createdAt: Date.now()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...locations, newLoc]));

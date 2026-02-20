@@ -34,7 +34,7 @@ const App: React.FC = () => {
         heading: pos.coords.heading,
         accuracy: pos.coords.accuracy
       }),
-      () => showMsg("Ative o GPS!", "error"),
+      () => showMsg("GPS Requerido", "error"),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
@@ -46,7 +46,6 @@ const App: React.FC = () => {
     }
   }, [currentCoords, activeLocation]);
 
-  // Lógica de Reconhecimento Automático (Auto-Scan)
   useEffect(() => {
     const isNear = navState?.distance !== undefined && navState.distance < 10.0;
     const canScan = mode === AppMode.PATROL && activeLocation && isNear && !isVerifying;
@@ -57,10 +56,10 @@ const App: React.FC = () => {
           if (arRef.current && !isVerifying) {
             const frame = arRef.current.captureOptimized();
             if (frame && activeLocation.referenceImage) {
-              handleAutoVerify(frame, activeLocation.referenceImage);
+              await handleAutoVerify(frame, activeLocation.referenceImage);
             }
           }
-        }, 4000);
+        }, 4500); // Intervalo ligeiramente maior para dar tempo à API
       }
     } else {
       if (scanIntervalRef.current) {
@@ -70,10 +69,7 @@ const App: React.FC = () => {
     }
 
     return () => {
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-        scanIntervalRef.current = null;
-      }
+      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
     };
   }, [navState?.distance, mode, activeLocation, isVerifying]);
 
@@ -81,9 +77,8 @@ const App: React.FC = () => {
     setIsVerifying(true);
     const result = await validateVisualAnchor(frame, reference);
     
-    if (result.isCorrectSpot || result.confidence >= 25) {
-      showMsg("LOCAL RECONHECIDO!", 'success');
-      // Limpa intervalo imediatamente
+    if (result.isCorrectSpot || result.confidence >= 20) {
+      showMsg("LOCAL CONFIRMADO!", 'success');
       if (scanIntervalRef.current) {
         clearInterval(scanIntervalRef.current);
         scanIntervalRef.current = null;
@@ -92,16 +87,16 @@ const App: React.FC = () => {
         setMode(AppMode.DASHBOARD);
         setActiveLocation(null);
         setIsVerifying(false);
-      }, 1500);
+      }, 1000); // Retorna rápido após confirmação
     } else {
-      setIsVerifying(false);
-      // No modo automático, falhas silenciosas permitem continuar tentando
+      // Pequeno delay antes de liberar o próximo scan para evitar overlap
+      setTimeout(() => setIsVerifying(false), 500);
     }
   };
 
   const handleSaveLocation = () => {
     if (!currentCoords || !newName.trim() || !referenceImage) {
-      showMsg("Dados incompletos!", "error");
+      showMsg("Preencha tudo!", "error");
       return;
     }
     const newLoc = db.saveLocation({
@@ -110,7 +105,7 @@ const App: React.FC = () => {
       longitude: currentCoords.longitude,
       referenceImage
     });
-    setLocations(prev => [...prev, newLoc]);
+    setLocations(db.getLocations());
     setNewName('');
     setReferenceImage(null);
     setMode(AppMode.DASHBOARD);
@@ -127,49 +122,48 @@ const App: React.FC = () => {
     <div className="flex flex-col flex-1 w-full min-h-screen bg-slate-50 overflow-x-hidden safe-top safe-bottom">
       {mode === AppMode.DASHBOARD && (
         <div className="flex flex-col flex-1 animate-in fade-in w-full">
-          <header className="mt-12 mb-8 flex flex-col items-center px-6 text-center">
-            <div className="p-4 bg-indigo-600 rounded-3xl shadow-xl shadow-indigo-500/20 mb-4">
+          <header className="mt-12 mb-8 flex flex-col items-center px-6">
+            <div className="p-4 bg-indigo-600 rounded-3xl shadow-lg shadow-indigo-500/20 mb-4">
               <Target className="text-white w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Patrol<span className="text-indigo-600">Guard</span></h1>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Ronda Inteligente & IA</p>
+            <h1 className="text-3xl font-black text-slate-900 uppercase">Patrol<span className="text-indigo-600">Guard</span></h1>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Ronda Digital</p>
           </header>
 
-          <div className="px-6 space-y-8 flex-1">
+          <div className="px-6 space-y-6 flex-1">
             <button 
               onClick={() => setMode(AppMode.REGISTRY)} 
-              className="w-full flex flex-col items-center justify-center p-12 bg-white rounded-[50px] border border-slate-200 shadow-sm active:scale-95 transition-all group"
+              className="w-full flex flex-col items-center justify-center p-10 bg-white rounded-[40px] border border-slate-200 shadow-sm active:bg-slate-50 transition-all"
             >
-              <div className="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center mb-4 group-active:bg-indigo-100">
-                <Plus className="w-7 h-7 text-indigo-600" />
+              <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mb-3">
+                <Plus className="w-6 h-6 text-indigo-600" />
               </div>
-              <span className="font-bold text-sm uppercase tracking-widest text-slate-600">Novo Ponto</span>
+              <span className="font-bold text-xs uppercase tracking-widest text-slate-500">Novo Ponto de Ronda</span>
             </button>
 
             <div className="space-y-4 pb-20">
-              <div className="flex items-center justify-between px-2">
-                <h2 className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Roteiro Ativo</h2>
-                <span className="bg-indigo-100 text-indigo-600 text-[9px] font-black px-2 py-1 rounded-full">{locations.length} PONTOS</span>
-              </div>
+              <h2 className="text-slate-400 font-bold text-[10px] uppercase tracking-widest px-2">Pontos Salvos</h2>
               {locations.length === 0 && (
-                <div className="text-center py-10 text-slate-300 text-sm italic">Nenhum ponto registrado.</div>
+                <div className="text-center py-10 bg-white/50 rounded-[40px] border border-dashed border-slate-200 text-slate-300 text-xs italic">
+                  Nenhum local cadastrado
+                </div>
               )}
               {locations.map(loc => (
-                <div key={loc.id} onClick={() => { setActiveLocation(loc); setMode(AppMode.PATROL); }} className="bg-white p-5 rounded-[40px] border border-slate-200 flex items-center justify-between active:bg-slate-50 shadow-sm transition-colors">
-                  <div className="flex items-center space-x-5 min-w-0">
-                    <div className="w-16 h-16 rounded-3xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                <div key={loc.id} onClick={() => { setActiveLocation(loc); setMode(AppMode.PATROL); }} className="bg-white p-4 rounded-[35px] border border-slate-200 flex items-center justify-between active:bg-slate-50 shadow-sm">
+                  <div className="flex items-center space-x-4 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                       {loc.referenceImage && <img src={loc.referenceImage} className="w-full h-full object-cover" />}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-slate-800 text-lg truncate">{loc.name}</h3>
-                      <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase mt-1">
-                        <Navigation className="w-3 h-3 mr-1.5 text-indigo-500" />
-                        <span>Iniciar Ronda</span>
+                      <h3 className="font-bold text-slate-800 text-base truncate">{loc.name}</h3>
+                      <div className="flex items-center text-[9px] text-indigo-500 font-black uppercase mt-0.5">
+                        <Navigation className="w-2.5 h-2.5 mr-1" />
+                        <span>Ir para Local</span>
                       </div>
                     </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); if(confirm('Excluir ponto?')){ db.deleteLocation(loc.id); setLocations(db.getLocations()); }}} className="p-4 text-slate-300 hover:text-red-500 transition-colors">
-                    <Trash2 className="w-6 h-6" />
+                  <button onClick={(e) => { e.stopPropagation(); if(confirm('Excluir?')){ db.deleteLocation(loc.id); setLocations(db.getLocations()); }}} className="p-3 text-slate-300 hover:text-red-500">
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               ))}
@@ -185,8 +179,8 @@ const App: React.FC = () => {
               <ChevronLeft className="w-6 h-6 text-slate-900" />
             </button>
             <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ronda Ativa</span>
-              <span className="text-slate-900 font-bold truncate max-w-[200px]">{activeLocation.name}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Em Rota</span>
+              <span className="text-slate-900 font-bold truncate max-w-[180px]">{activeLocation.name}</span>
             </div>
             <div className="w-14"></div>
           </header>
@@ -197,16 +191,10 @@ const App: React.FC = () => {
             ) : (
               <div className="space-y-6 animate-in fade-in zoom-in-95">
                  <div className="text-center bg-indigo-50 p-6 rounded-[40px] border border-indigo-100 shadow-sm">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Alvo Detectado</p>
-                    <p className="text-slate-900 text-base font-bold mt-1">O sistema está reconhecendo automaticamente...</p>
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Reconhecimento Ativo</p>
+                    <p className="text-slate-900 text-sm font-bold mt-1">Aponte a câmera para o objeto</p>
                  </div>
-                 <ARView 
-                    ref={arRef} 
-                    referenceImage={activeLocation.referenceImage} 
-                    onCapture={() => {}} // Captura agora é automática
-                    isVerifying={isVerifying} 
-                    autoMode={true} 
-                  />
+                 <ARView ref={arRef} referenceImage={activeLocation.referenceImage} onCapture={() => {}} isVerifying={isVerifying} autoMode={true} />
               </div>
             )}
           </main>
@@ -219,7 +207,7 @@ const App: React.FC = () => {
             <button onClick={() => setMode(AppMode.DASHBOARD)} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
               <ChevronLeft className="w-6 h-6 text-slate-900" />
             </button>
-            <span className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Registrar Âncora</span>
+            <span className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Novo Registro</span>
             <div className="w-10"></div>
           </header>
           
@@ -229,19 +217,19 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="flex-1 flex flex-col animate-in fade-in pb-10">
-              <div className="relative aspect-[9/12] rounded-[50px] overflow-hidden border-4 border-white shadow-xl mb-8">
+              <div className="relative aspect-[9/12] rounded-[45px] overflow-hidden border-4 border-white shadow-xl mb-6">
                 <img src={referenceImage} className="w-full h-full object-cover" />
-                <button onClick={() => setReferenceImage(null)} className="absolute top-6 right-6 bg-white/90 p-4 rounded-full text-slate-900 shadow-md">
-                  <Trash2 className="w-6 h-6" />
+                <button onClick={() => setReferenceImage(null)} className="absolute top-5 right-5 bg-white/90 p-3 rounded-full text-slate-900 shadow-lg">
+                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
               <input 
                 type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
-                placeholder="Identificação do Ponto"
-                className="w-full bg-white border border-slate-200 p-6 rounded-[30px] text-lg font-bold text-slate-900 outline-none shadow-sm mb-6 focus:border-indigo-500 transition-colors"
+                placeholder="Identifique este local..."
+                className="w-full bg-white border border-slate-200 p-5 rounded-[25px] text-base font-bold text-slate-900 outline-none shadow-sm mb-6 focus:border-indigo-500 transition-colors"
               />
-              <button onClick={handleSaveLocation} className="w-full bg-indigo-600 py-7 rounded-[35px] font-black text-lg shadow-xl shadow-indigo-600/30 text-white flex items-center justify-center space-x-3 active:scale-95 transition-all">
-                <Save className="w-7 h-7" /> <span>CONCLUIR</span>
+              <button onClick={handleSaveLocation} className="w-full bg-indigo-600 py-6 rounded-[30px] font-black text-base shadow-xl shadow-indigo-600/30 text-white flex items-center justify-center space-x-3 active:scale-95 transition-all">
+                <Save className="w-6 h-6" /> <span>SALVAR PONTO</span>
               </button>
             </div>
           )}
@@ -249,11 +237,11 @@ const App: React.FC = () => {
       )}
 
       {message && (
-        <div className={`fixed bottom-10 inset-x-6 p-7 rounded-[40px] border shadow-2xl backdrop-blur-xl flex items-center space-x-5 z-50 animate-in fade-in slide-in-from-bottom-10 ${message.type === 'success' ? 'bg-emerald-500/90 border-emerald-400' : 'bg-rose-500/90 border-rose-400'}`}>
-          <div className="p-2.5 bg-white/20 rounded-full shrink-0">
-            {message.type === 'success' ? <Sparkles className="w-7 h-7 text-white" /> : <AlertCircle className="w-7 h-7 text-white" />}
+        <div className={`fixed bottom-10 inset-x-6 p-6 rounded-[35px] border shadow-2xl backdrop-blur-xl flex items-center space-x-4 z-50 animate-in fade-in slide-in-from-bottom-10 ${message.type === 'success' ? 'bg-emerald-500/90 border-emerald-400 shadow-emerald-500/20' : 'bg-rose-500/90 border-rose-400 shadow-rose-500/20'}`}>
+          <div className="p-2 bg-white/20 rounded-full shrink-0">
+            {message.type === 'success' ? <Sparkles className="w-6 h-6 text-white" /> : <AlertCircle className="w-6 h-6 text-white" />}
           </div>
-          <p className="text-white font-black text-xl uppercase tracking-tight leading-none">{message.text}</p>
+          <p className="text-white font-black text-lg uppercase tracking-tight">{message.text}</p>
         </div>
       )}
     </div>
