@@ -5,6 +5,7 @@ export interface VisualValidation {
   isCorrectSpot: boolean;
   confidence: number;
   feedback: string;
+  matchType: 'EXACT' | 'SIMILAR' | 'NONE';
 }
 
 export const validateVisualAnchor = async (
@@ -36,19 +37,19 @@ export const validateVisualAnchor = async (
             },
           },
           {
-            text: `AJA COMO UM SISTEMA DE VISÃO COMPUTACIONAL INTELIGENTE.
-            Você deve comparar a IMAGEM 1 (câmera atual) com a IMAGEM 2 (referência salva).
+            text: `AJA COMO UM DETECTOR DE OBJETOS SEMÂNTICO.
+            Sua missão é validar se o usuário encontrou o objeto/lugar da foto de referência.
             
-            DIRETRIZES DE RECONHECIMENTO:
-            1. IDENTIDADE DO OBJETO: Se o objeto principal for o mesmo (ex: uma cafeteira, um monitor, uma planta específica), considere um acerto.
-            2. TOLERÂNCIA: Ignore variações de iluminação, ângulo, sombras, desordem na mesa ou se o objeto foi levemente movido.
-            3. DIFERENCIAÇÃO: Não confunda objetos de classes diferentes (ex: não confunda uma xícara com um computador).
-            4. AMBIENTE: Se o objeto não for claro, mas o fundo (parede, móveis ao redor) for claramente o mesmo lugar, considere um acerto.
+            REGRAS DE OURO:
+            1. IDENTIDADE DE CATEGORIA: Se a referência é uma xícara e o atual é uma xícara (mesmo que de outra cor), considere SIMILAR.
+            2. CONTEXTO AMBIENTAL: Se o objeto for difícil de ver mas o fundo (móveis, paredes) for claramente o mesmo local, considere EXACT.
+            3. DIFERENCIAÇÃO: Nunca valide se os objetos forem de classes diferentes (ex: monitor vs xícara).
+            4. TOLERÂNCIA TOTAL: Ignore luz, sombras, ângulo torto ou se o objeto mudou de lugar na mesa.
             
-            Se houver pelo menos 40% de semelhança contextual, marque "isCorrectSpot" como true.
+            Se houver qualquer semelhança de identidade, marque "isCorrectSpot" como true.
             
-            Responda APENAS com este JSON: 
-            {"isCorrectSpot": boolean, "confidence": number, "feedback": "string curta e motivadora"}`,
+            Retorne APENAS JSON: 
+            {"isCorrectSpot": boolean, "confidence": number, "matchType": "EXACT" | "SIMILAR" | "NONE", "feedback": "string curta"}`,
           },
         ],
       },
@@ -57,7 +58,7 @@ export const validateVisualAnchor = async (
       }
     });
 
-    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "feedback": "Tentando alinhar..."}';
+    const text = response.text || '{"isCorrectSpot": false, "confidence": 0, "matchType": "NONE", "feedback": "..."}';
     const cleanText = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
     
     return JSON.parse(cleanText);
@@ -66,7 +67,8 @@ export const validateVisualAnchor = async (
     return {
       isCorrectSpot: false,
       confidence: 0,
-      feedback: "Problema de conexão com a visão IA."
+      matchType: 'NONE',
+      feedback: "Erro de visão"
     };
   }
 };
